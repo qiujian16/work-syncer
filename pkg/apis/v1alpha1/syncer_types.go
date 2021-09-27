@@ -9,12 +9,22 @@ import (
 type StatusSyncSpec struct {
 	// ObjectReference represents the reference to the object to apply the resources.
 	ObjectReference ObjectRef `json:"objectRef"`
+
+	InterestedResources []InterestedResource `json:"interesedResource,omitempty"`
 }
 
 type ObjectRef struct {
 	Group   string `json:"group"`
 	Version string `json:"version"`
 	Name    string `json:"name"`
+}
+
+type InterestedResource struct {
+	// ResourceMeta represents the group, version, kind, name and namespace of a resoure.
+	// +required
+	ResourceMeta workapiv1.AppliedManifestResourceMeta `json:"resourceMeta"`
+
+	InterestedFieldPaths []string `json:"interestedFieldPaths,omitempty"`
 }
 
 type StatusSyncStatus struct {
@@ -25,14 +35,39 @@ type StatusSyncStatus struct {
 type SyncStatus struct {
 	// ResourceMeta represents the group, version, kind, name and namespace of a resoure.
 	// +required
-	ResourceMeta workapiv1.ManifestResourceMeta `json:"resourceMeta"`
+	ResourceMeta workapiv1.AppliedManifestResourceMeta `json:"resourceMeta"`
 
-	AvailableReplica *int32 `json:"availableReplica,omitempty"`
+	InterestedValues []InterestedValue `json:"interestedValues"`
 
-	// Conditions represents the conditions of this resource on a managed cluster.
-	// +required
 	Conditions []metav1.Condition `json:"conditions"`
 }
+
+type InterestedValue struct {
+	FieldPath string `json:"fieldPath"`
+
+	Value FieldValue `json:"fieldValue"`
+}
+
+type FieldValue struct {
+	Type ValueType `json:"type"`
+
+	// +optional
+	Integer int32 `json:"integer,omitempty"`
+
+	// +optional
+	String string `json:"string,omitempty"`
+
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+type ValueType string
+
+const (
+	Integer    ValueType = "Integer"
+	String     ValueType = "String"
+	Conditions ValueType = "Conditions"
+)
 
 // +genclient
 // +kubebuilder:object:root=true
@@ -47,6 +82,7 @@ type StatusSync struct {
 	// +optional
 	Spec StatusSyncSpec `json:"spec,omitempty"`
 	// status defines the status of each applied manifest on the spoke cluster.
+	// +optional
 	Status StatusSyncStatus `json:"status,omitempty"`
 }
 
